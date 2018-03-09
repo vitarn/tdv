@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.1.1"></a>
+## [0.1.1](https://github.com/vitarn/tdv/compare/v0.1.0...v0.1.1) (2018-03-09)
+
+
+### Bug Fixes
+
+* **travis:** npm deploy repo name ([#2](https://github.com/vitarn/tdv/issues/2)) ([18f5fb5](https://github.com/vitarn/tdv/commit/18f5fb5))
+
+
+
 <a name="0.1.0"></a>
 # 0.1.0 (2018-03-09)
 
