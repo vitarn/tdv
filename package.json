@@ -1,0 +1,48 @@
+{
+  "name": "tdv",
+  "version": "0.0.1",
+  "description": "Typescript (definition|decorator) validator base on Joi",
+  "repository": "https://github.com/vitarn/tdv",
+  "author": "colder",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "testing": "jest --watch",
+    "coverage": "jest --coverage --maxWorkers=4",
+    "typecheck": "tsc --noEmit",
+    "release": "standard-version",
+    "prepack": "tsc --removeComments --inlineSourceMap false | echo shut up"
+  },
+  "devDependencies": {
+    "@types/jest": "^22.2.0",
+    "@types/joi": "^13.0.5",
+    "@types/node": "^9.4.6",
+    "jest": "^22.4.2",
+    "joi": "12",
+    "standard-version": "^4.3.0",
+    "ts-jest": "^22.4.1",
+    "typescript": "^2.7.2"
+  },
+  "peerDependencies": {
+    "joi": "<= 12"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(j|t)sx?$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  }
+}
