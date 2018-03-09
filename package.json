@@ -19,13 +19,13 @@
     "@types/joi": "^13.0.5",
     "@types/node": "^9.4.6",
     "jest": "^22.4.2",
-    "joi": "^13.1.2",
+    "joi": "12",
     "standard-version": "^4.3.0",
     "ts-jest": "^22.4.1",
     "typescript": "^2.7.2"
   },
   "peerDependencies": {
-    "joi": "*"
+    "joi": "<= 12"
   },
   "files": [
     "index.js",

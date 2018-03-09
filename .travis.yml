@@ -2,7 +2,7 @@ language: node_js
 node_js:
   - node
   - 8
-  - 6
+  - 6.10.3 # aws lambda
 
 before_install: which npx || yarn global add npx
 
