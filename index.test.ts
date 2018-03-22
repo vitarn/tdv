@@ -1,8 +1,7 @@
-import { Schema, required, optional, $metadata, $validator } from './'
-
+import { Schema, required, optional, createDecorater } from './'
 
 describe('Schema', () => {
-    describe('$metadata', () => {
+    describe('merged metadata', () => {
         class FirstSchema extends Schema {
             @required(Joi => Joi.string().uuid({ version: 'uuidv4' }))
             id: string
@@ -27,19 +26,19 @@ describe('Schema', () => {
         }
 
         it('has no metadata in Schema', () => {
-            expect(Object.keys(Schema[$metadata])).toEqual([])
+            expect(Object.keys(Schema.metadata)).toEqual([])
         })
 
         it('have metadatas in FirstSchema', () => {
-            expect(Object.keys(FirstSchema[$metadata])).toEqual(['id', 'name'])
+            expect(Object.keys(FirstSchema.metadata)).toEqual(['id', 'name'])
         })
 
         it('have metadatas in SecondSchema same as FirstSchema', () => {
-            expect(Object.keys(SecondSchema[$metadata])).toEqual(['id', 'name'])
+            expect(Object.keys(SecondSchema.metadata)).toEqual(['id', 'name'])
         })
 
         it('have metadatas in ThirdSchema', () => {
-            expect(Object.keys(ThirdSchema[$metadata])).toEqual(['id', 'name', 'age', 'active'])
+            expect(Object.keys(ThirdSchema.metadata)).toEqual(['id', 'name', 'age', 'active'])
         })
     })
 
@@ -124,8 +123,62 @@ describe('Schema', () => {
                     name: 'Joe',
                 },
             })
+        })
+    })
+})
 
-            console.log(new User().toJSON())
+describe('decorator', () => {
+    describe('createDecorater', () => {
+        it('create class decorator', () => {
+            @((...args) => {
+                return createDecorater((target, [one]) => {
+                    target.prototype['mark'] = true
+                }, args)
+            })
+            class Foo extends Schema { }
+
+            expect(Foo.prototype['mark']).toBe(true)
+        })
+
+        it('create class decorator with args', () => {
+            @((...args) => {
+                return createDecorater((target, [one, two]) => {
+                    target.prototype['one'] = one
+                    target.prototype['two'] = two
+                }, args)
+            })(1, 2)
+            class Foo extends Schema { }
+
+            expect(Foo.prototype['one']).toBe(1)
+            expect(Foo.prototype['two']).toBe(2)
+        })
+
+        it('create prop decorator', () => {
+            class Foo extends Schema {
+                @((...args) => {
+                    return createDecorater((target, [one]) => {
+                        target['mark'] = true
+                    }, args)
+                })
+                bar
+            }
+
+            expect(Foo.prototype['mark']).toBe(true)
+        })
+
+        it('create prop decorator with args', () => {
+            class Foo extends Schema {
+                @((...args) => {
+                    return createDecorater((target, key, desc, [one, two]) => {
+                        target['one'] = one
+                        target['two'] = two
+                    }, args)
+                })(1, 2)
+                bar
+            }
+
+            expect(Foo.prototype['one']).toBe(1)
+            expect(Foo.prototype['two']).toBe(2)
         })
     })
 })
