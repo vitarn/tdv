@@ -1,6 +1,8 @@
+import debug from './debug'
 import Joi from 'joi'
 import { metadataFor } from './metadata'
-import { log } from './log'
+
+const log = debug('schema')
 
 export class Schema {
     static get metadata(): Metadata {

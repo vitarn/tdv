@@ -1,7 +1,9 @@
+import debug from './debug'
 import Joi from 'joi'
 import { metadataFor } from './metadata'
 import { Schema } from './schema'
-import { log } from './log'
+
+const log = debug('decorator')
 
 /**
  * Inspire from core-decorators

@@ -1,4 +1,6 @@
-import { log } from './log'
+import debug from './debug'
+
+const log = debug('metadata')
 
 const key = Symbol.for('__metadata__')
 
