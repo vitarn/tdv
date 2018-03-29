@@ -1,11 +1,11 @@
 # tdv
 
+Typescript (definition|decorator) validator base on Joi
+
 [![License][ico-license]][link-license]
 [![NPM][ico-npm]][link-npm]
 [![Build Status][ico-build]][link-build]
 [![Coverage Status][ico-codecov]][link-codecov]
-
-Typescript (definition|decorator) validator base on Joi
 
 ## Example
 
