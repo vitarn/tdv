@@ -1,4 +1,5 @@
-import { Schema, required, optional, createDecorater } from './'
+import { Schema } from '../schema'
+import { required, optional, createDecorator } from '../decorator'
 
 describe('Schema', () => {
     describe('merged metadata', () => {
@@ -125,60 +126,28 @@ describe('Schema', () => {
             })
         })
     })
-})
 
-describe('decorator', () => {
-    describe('createDecorater', () => {
-        it('create class decorator', () => {
-            @((...args) => {
-                return createDecorater((target, [one]) => {
-                    target.prototype['mark'] = true
-                }, args)
-            })
-            class Foo extends Schema { }
+    describe('joi rewrite', () => {
+        class Foo extends Schema {
+            @optional(j => j.number().default(() => 1, '1'))
+            age: number
+        }
 
-            expect(Foo.prototype['mark']).toBe(true)
+        it('default', () => {
+            expect(new Foo().attempt().age).toBe(1)
         })
+    })
 
-        it('create class decorator with args', () => {
-            @((...args) => {
-                return createDecorater((target, [one, two]) => {
-                    target.prototype['one'] = one
-                    target.prototype['two'] = two
-                }, args)
-            })(1, 2)
-            class Foo extends Schema { }
+    describe('without joi', () => {
+        class Foo extends Schema {
+            @((...args) => createDecorator((target, [one]) => {
+                target['mark'] = true
+            }, args))
+            age: number
+        }
 
-            expect(Foo.prototype['one']).toBe(1)
-            expect(Foo.prototype['two']).toBe(2)
-        })
-
-        it('create prop decorator', () => {
-            class Foo extends Schema {
-                @((...args) => {
-                    return createDecorater((target, [one]) => {
-                        target['mark'] = true
-                    }, args)
-                })
-                bar
-            }
-
-            expect(Foo.prototype['mark']).toBe(true)
-        })
-
-        it('create prop decorator with args', () => {
-            class Foo extends Schema {
-                @((...args) => {
-                    return createDecorater((target, key, desc, [one, two]) => {
-                        target['one'] = one
-                        target['two'] = two
-                    }, args)
-                })(1, 2)
-                bar
-            }
-
-            expect(Foo.prototype['one']).toBe(1)
-            expect(Foo.prototype['two']).toBe(2)
+        it('attempt', () => {
+            expect(() => new Foo().attempt()).not.toThrow()
         })
     })
 })

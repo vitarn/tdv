@@ -18,8 +18,12 @@ export class Schema {
     static get validator() {
         const metadata = this.metadata
         const schema = Object.keys(metadata).reduce((obj, key) => {
-            log('push field %s into validator', key)
-            obj[key] = metadata[key]['tdv:joi'] || metadata[key]['tdv:ref']['validator']
+            const meta = metadata[key]
+            const val = meta['tdv:joi'] || meta['tdv:ref'] && meta['tdv:ref']['validator']
+            if (val) {
+                log('push field %s into validator', key)
+                obj[key] = val
+            }
             return obj
         }, {})
 

@@ -11,7 +11,7 @@ const log = debug('decorator')
  * @param handleDescriptor 
  * @param entryArgs 
  */
-export function createDecorater(handleDescriptor: HandleDescriptor, entryArgs: any[]) {
+export function createDecorator(handleDescriptor: HandleDescriptor, entryArgs: any[]) {
     const [target] = entryArgs
     // console.log('target instanceof Schema', target instanceof Schema, entryArgs)
     // console.log('Schema.isPrototypeOf(target)', Schema.isPrototypeOf(target), entryArgs)
@@ -79,7 +79,7 @@ function designTypeToJoiSchema(designType: Function) {
  *      @required(Joi => Joi.string()) name: string
  */
 export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
-    return createDecorater(fieldDescriptor({ required: true }), args)
+    return createDecorator(fieldDescriptor({ required: true }), args)
 }
 
 /**
@@ -90,7 +90,7 @@ export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
  */
 
 export const optional: FlexibleDecorator<JoiBuilder> = (...args) => {
-    return createDecorater(fieldDescriptor(), args)
+    return createDecorator(fieldDescriptor(), args)
 }
 
 /* TYPES */
