@@ -1,5 +1,7 @@
 # tdv
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/vitarn/tdv.svg)](https://greenkeeper.io/)
+
 Typescript (definition|decorator) validator base on Joi
 
 [![License][ico-license]][link-license]
