@@ -1,7 +1,14 @@
+import Joi from 'joi'
 import { Schema } from '../schema'
 import { required, optional, createDecorator } from '../decorator'
 
 describe('Schema', () => {
+    describe('Joi', () => {
+        it('use a copy version Joi', () => {
+            expect(Schema.Joi).not.toBe(Joi)
+        })
+    })
+
     describe('merged metadata', () => {
         class FirstSchema extends Schema {
             @required(Joi => Joi.string().uuid({ version: 'uuidv4' }))
@@ -72,7 +79,6 @@ describe('Schema', () => {
             const parseUser = new User().parse(props)
 
             expect(newUser.profile).toBeInstanceOf(Profile)
-            expect(newUser.profile.age).toBe(1)
 
             expect(buildUser).toEqual(newUser)
             expect(parseUser).toEqual(newUser)
@@ -180,7 +186,7 @@ describe('Schema', () => {
             }).profile.address).toBeInstanceOf(Address)
         })
 
-        it('fallback to joi default value', () => {
+        it('apply joi default value', () => {
             const user = new User().parse({
                 id: '1',
                 profile: {
@@ -269,71 +275,38 @@ describe('Schema', () => {
 
             expect(user.validate().error).toBeNull()
         })
-        
+
         it('return joi default', () => {
             let user = new User({ id: '1', profile: new Profile() })
 
             expect(user.validate().value.profile.age).toBe(1)
         })
 
-        it('mutable validate', () => {
-            let user = new User({ id: '1', profile: new Profile() })
-            expect(user.profile.age).toBe(1)
-
-            user.profile.age = undefined
+        it('apply validate value', () => {
+            let user = User.build({ id: 1, profile: new Profile() }, { convert: false })
             expect(user.validate().value.profile.age).toBe(1)
             expect(user.profile.age).toBeUndefined()
 
             user.validate({ apply: true })
             expect(user.profile.age).toBe(1)
         })
-    })
 
-    describe('attempt', () => {
-        class Profile extends Schema {
-            @optional(j => j.string())
-            name?: string
-
-            @optional(j => j.number().default(1))
-            age?: number
-        }
-
-        class User extends Schema {
-            @required(j => j.number())
-            id: number
-
-            @optional
-            profile?: Profile
-        }
-
-        it('throw error if invalid', () => {
+        it('raise error if invalid', () => {
             let user = new User({ id: 'abc', profile: new Profile({ name: 'Joe' }) })
 
-            expect(() => user.attempt()).toThrow()
+            expect(() => user.validate({ raise: true })).toThrow()
         })
 
         it('return json if valid', () => {
             let user = new User({ id: '123', profile: new Profile({ name: 'Joe' }) })
 
-            expect(user.attempt()).toEqual({
+            expect(user.validate({ raise: true }).value).toEqual({
                 id: 123,
                 profile: {
                     name: 'Joe',
                     age: 1,
                 },
             })
-        })
-
-        it('mutable attempt', () => {
-            let user = new User({ id: '1', profile: new Profile() })
-            expect(user.profile.age).toBe(1)
-
-            user.profile.age = undefined
-            expect(user.attempt().profile.age).toBe(1)
-            expect(user.profile.age).toBeUndefined()
-
-            user.attempt({ apply: true })
-            expect(user.profile.age).toBe(1)
         })
     })
 
@@ -349,12 +322,12 @@ describe('Schema', () => {
         }
 
         it('has default value', () => {
-            expect(new Foo(({ age: undefined })).attempt().age).toBe(1)
+            expect(new Foo(({ age: undefined })).validate().value.age).toBe(1)
         })
 
         it('has default value in sub class', () => {
-            expect(new Foo().attempt()).toEqual({ age: 1 })
-            expect(new Bar().attempt()).toEqual({ age: 1, height: 2 })
+            expect(new Foo().validate().value).toEqual({ age: 1 })
+            expect(new Bar().validate().value).toEqual({ age: 1, height: 2 })
         })
     })
 
@@ -366,8 +339,8 @@ describe('Schema', () => {
             age: number
         }
 
-        it('attempt', () => {
-            expect(() => new Foo().attempt()).not.toThrow()
+        it('validate no error', () => {
+            expect(new Foo().validate().error).toBeNull()
         })
     })
 })

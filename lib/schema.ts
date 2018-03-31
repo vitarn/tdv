@@ -5,6 +5,12 @@ import { metadataFor } from './metadata'
 const log = debug('schema')
 
 export class Schema {
+    /**
+     * A copy version Joi
+     * Prevent modify global Joi options
+     */
+    static Joi = Joi.defaults(s => s)
+
     static get metadata(): Metadata {
         const metadatas = []
         let proto = this.prototype
@@ -27,18 +33,26 @@ export class Schema {
             return obj
         }, {})
 
-        return Joi.object(schema)
+        return this.Joi.object(schema)
     }
 
-    static build<S extends Schema>(this: SchemaStatic<S>, props?: SchemaProperties<S>) {
-        return new this(props) as S
+    static build<S extends Schema>(
+        this: SchemaStatic<S>,
+        props?: SchemaProperties<S>,
+        options?: SchemaOptions
+    ) {
+        return new this().parse(props, options) as S
     }
 
     constructor(props?) {
-        this.parse(props)
+        if (props) this.parse(props)
     }
     
-    parse(props = {} as SchemaProperties<this>) {
+    parse(
+        props = {} as SchemaProperties<this>,
+        options = {} as SchemaOptions
+    ) {
+        const { convert = true } = options
         const metadata: Metadata = this.constructor['metadata']
 
         for (const key in metadata) {
@@ -46,7 +60,7 @@ export class Schema {
             const value = props[key]
 
             const Ref = meta['tdv:ref']
-            const Joi = meta['tdv:joi']
+            const joi = meta['tdv:joi']
 
             if (Ref) {
                 // skip sub model
@@ -63,13 +77,13 @@ export class Schema {
 
                 if (this[key].parse) {
                     // sub model can parse value
-                    this[key].parse(value)
+                    this[key].parse(value, options)
                 } else if (value && typeof value === 'object') {
-                    // non model class? Schema?
+                    // non schema has tdv meta?
                     Object.assign(this[key], value)
                 }
-            } else if (Joi) {
-                const result = Joi.validate(value)
+            } else if (joi && convert) {
+                const result = joi.validate(value)
 
                 if (result.error) {
                     // joi invalid value
@@ -78,28 +92,26 @@ export class Schema {
                     // joi validate will cast trans and set default value
                     this[key] = result.value
                 }
+            } else {
+                this[key] = value
             }
         }
 
         return this
     }
 
-    validate(options: ValidationOptions & Joi.ValidationOptions = {}) {
-        const { apply, ...opts } = options
+    validate(options = {} as ValidationOptions) {
+        const { apply, raise, ...opts } = options
+        if (!('allowUnknown' in opts)) opts.allowUnknown = true
+
         const validator: Joi.Schema = this.constructor['validator']
         const result = validator.validate(this, opts)
 
-        if (apply && !result.error) this.parse(result.value)
-
-        return result
-    }
-
-    attempt(options: ValidationOptions = {}) {
-        const { apply } = options
-        const validator: Joi.Schema = this.constructor['validator']
-        const result = Joi.attempt(this, validator)
-
-        if (apply) this.parse(result)
+        if (result.error) {
+            if (raise) throw result.error
+        } else if (apply) {
+            this.parse(result.value)
+        }
 
         return result
     }
@@ -126,6 +138,13 @@ export class Schema {
 
 /* TYPES */
 
+export interface SchemaOptions {
+    /**
+     * Convert by Joi. when `true`, attempts to cast values to the required types (e.g. a string to a number, or apply default value). Defaults to `true`.
+     */
+    convert?: boolean
+}
+
 export interface Metadata {
     [propertyKey: string]: MetadataProperty
 }
@@ -139,8 +158,15 @@ export interface MetadataProperty {
     'tdv:ref'?: typeof Schema
 }
 
-export interface ValidationOptions {
+export interface ValidationOptions extends Joi.ValidationOptions {
+    /**
+     * Apply validate result value, `parse` it if valid.
+     */
     apply?: boolean
+    /**
+     * Validates a value, returns valid result, and throws if validation fails. Similar `Joi.attempt`.
+     */
+    raise?: boolean
 }
 
 /**
