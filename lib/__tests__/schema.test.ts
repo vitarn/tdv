@@ -133,8 +133,18 @@ describe('Schema', () => {
             age: number
         }
 
-        it('default', () => {
-            expect(new Foo().attempt().age).toBe(1)
+        class Bar extends Foo {
+            @optional(j => j.number().default(() => 2, '2'))
+            height: number
+        }
+
+        it('has default value', () => {
+            expect(new Foo(({ age: undefined })).attempt().age).toBe(1)
+        })
+
+        it('has default value in sub class', () => {
+            expect(new Foo().attempt()).toEqual({ age: 1 })
+            expect(new Bar().attempt()).toEqual({ age: 1, height: 2 })
         })
     })
 
