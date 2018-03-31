@@ -52,10 +52,11 @@ const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, k
     if (opts.required && joi && typeof joi.required === 'function') {
         joi = joi.required()
     }
-    property['tdv:joi'] = joi
+    property['tdv:joi'] = joi.label(key)
 }
 
 function designTypeToJoiSchema(designType: Function) {
+    log('parse design:type', designType)
     switch (designType) {
         case Number:
             return Joi.number()
@@ -63,10 +64,12 @@ function designTypeToJoiSchema(designType: Function) {
             return Joi.string()
         case Boolean:
             return Joi.boolean()
-        case Buffer:
-            return Joi.binary()
+        // only arrow function type, Function is Object
         case Function:
             return Joi.func()
+        // FIXME: this not works bcs Buffer is Object
+        case Buffer:
+            return Joi.binary()
         default:
             return Joi.any()
     }
