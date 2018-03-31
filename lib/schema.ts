@@ -73,10 +73,10 @@ export interface Metadata {
 }
 
 export interface MetadataProperty {
-    'design:type'?: Function | Schema
+    'design:type'?: Function | typeof Schema
     'design:paramtypes'?: Function[]
     'design:returntype'?: Function
 
     'tdv:joi'?: Joi.Schema
-    'tdv:ref'?: Schema
+    'tdv:ref'?: typeof Schema
 }
