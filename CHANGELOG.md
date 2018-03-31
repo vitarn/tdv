@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.2.1"></a>
+## [0.2.1](https://github.com/vitarn/tdv/compare/v0.2.0...v0.2.1) (2018-03-31)
+
+
+### Bug Fixes
+
+* **schema:** validate accept options extends joi option with apply field ([775ea5d](https://github.com/vitarn/tdv/commit/775ea5d))
+
+
+
 <a name="0.2.0"></a>
 # [0.2.0](https://github.com/vitarn/tdv/compare/v0.1.4...v0.2.0) (2018-03-31)
 
