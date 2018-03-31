@@ -43,6 +43,179 @@ describe('Schema', () => {
         })
     })
 
+    describe('constructor', () => {
+        class Profile extends Schema {
+            @required
+            name: string
+
+            @optional(j => j.number().default(1))
+            age?: number
+        }
+
+        class User extends Schema {
+            @required
+            id: string
+
+            @required
+            profile: Profile
+        }
+
+        it('have 3 ways init a Schema', () => {
+            const props = {
+                id: '1',
+                profile: {
+                    name: 'foo'
+                }
+            }
+            const newUser = new User(props)
+            const buildUser = User.build(props)
+            const parseUser = new User().parse(props)
+
+            expect(newUser.profile).toBeInstanceOf(Profile)
+            expect(newUser.profile.age).toBe(1)
+
+            expect(buildUser).toEqual(newUser)
+            expect(parseUser).toEqual(newUser)
+        })
+    })
+
+    describe('parse', () => {
+        class Address extends Schema {
+            @optional
+            province?: string
+
+            @optional
+            city?: string
+        }
+
+        // WARN: If put Profile late than User. User#profile design:type is undefined
+        class Profile extends Schema {
+            @required
+            name: string
+
+            @optional(j => j.number().default(1))
+            age?: number
+
+            @optional
+            address?: Address
+        }
+
+        class User extends Schema {
+            @required
+            id: string
+
+            @required
+            profile: Profile
+        }
+
+        it('parse object and init child', () => {
+            const user = new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    age: 10,
+                    address: {
+                        province: 'gz',
+                        city: 'sz',
+                    },
+                },
+            })
+
+            expect(user.profile).toBeInstanceOf(Profile)
+            expect(user.profile.address).toBeInstanceOf(Address)
+            expect(user.profile.address.city).toBe('sz')
+        })
+
+        it('skip child if not provide props', () => {
+            const user = new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                },
+            })
+
+            expect(user.profile.address).toBeUndefined()
+        })
+
+        it('accept child instance', () => {
+            const address = new Address()
+            const user = new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    address,
+                },
+            })
+
+            expect(user.profile.address).toBe(address)
+        })
+
+        it('leave null for child', () => {
+            expect(new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    address: null,
+                },
+            }).profile.address).toBeNull()
+        })
+
+        it('leave undefined for child', () => {
+            expect(new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    address: undefined,
+                },
+            }).profile.address).toBeUndefined()
+        })
+
+        it('init child even props is empty', () => {
+            expect(new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    address: {},
+                },
+            }).profile.address).toBeInstanceOf(Address)
+        })
+
+        it('fallback to joi default value', () => {
+            const user = new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                },
+            })
+
+            expect(user.profile.age).toBe(1)
+        })
+
+        it('cast value type by joi', () => {
+            const user = new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    age: ' 10 ' as any,
+                },
+            })
+
+            expect(user.profile.age).toBe(10)
+        })
+
+        it('leave wrong type value there', () => {
+            const user = new User().parse({
+                id: '1',
+                profile: {
+                    name: 'foo',
+                    age: '10y' as any,
+                },
+            })
+
+            expect(user.profile.age).toBe('10y')
+        })
+    })
+
     describe('toJSON', () => {
         class User extends Schema {
             @required id: number
@@ -70,16 +243,19 @@ describe('Schema', () => {
 
     describe('validate', () => {
         class Profile extends Schema {
-            @required(j => j.string())
-            name: string
+            @optional(j => j.string())
+            name?: string
+
+            @optional(j => j.number().default(1))
+            age?: number
         }
 
         class User extends Schema {
             @required(j => j.number())
             id: number
 
-            @required
-            profile: Profile
+            @optional
+            profile?: Profile
         }
 
         it('contain error if invalid', () => {
@@ -93,20 +269,40 @@ describe('Schema', () => {
 
             expect(user.validate().error).toBeNull()
         })
+        
+        it('return joi default', () => {
+            let user = new User({ id: '1', profile: new Profile() })
+
+            expect(user.validate().value.profile.age).toBe(1)
+        })
+
+        it('write back after validate', () => {
+            let user = new User({ id: '1', profile: new Profile() })
+            expect(user.profile.age).toBe(1)
+
+            user.profile.age = undefined
+            expect(user.profile.age).toBeUndefined()
+
+            user.validate()
+            expect(user.profile.age).toBe(1)
+        })
     })
 
     describe('attempt', () => {
         class Profile extends Schema {
-            @required(j => j.string())
-            name: string
+            @optional(j => j.string())
+            name?: string
+
+            @optional(j => j.number().default(1))
+            age?: number
         }
 
         class User extends Schema {
             @required(j => j.number())
             id: number
 
-            @required
-            profile: Profile
+            @optional
+            profile?: Profile
         }
 
         it('throw error if invalid', () => {
@@ -122,8 +318,20 @@ describe('Schema', () => {
                 id: 123,
                 profile: {
                     name: 'Joe',
+                    age: 1,
                 },
             })
+        })
+
+        it('write back after attempt', () => {
+            let user = new User({ id: '1', profile: new Profile() })
+            expect(user.profile.age).toBe(1)
+
+            user.profile.age = undefined
+            expect(user.profile.age).toBeUndefined()
+
+            user.attempt()
+            expect(user.profile.age).toBe(1)
         })
     })
 
