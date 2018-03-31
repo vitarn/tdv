@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.1.4"></a>
+## [0.1.4](https://github.com/vitarn/tdv/compare/v0.1.3...v0.1.4) (2018-03-31)
+
+
+### Bug Fixes
+
+* **decorator:** set joi label ([b814fd9](https://github.com/vitarn/tdv/commit/b814fd9))
+* **joi:** try require ([1903374](https://github.com/vitarn/tdv/commit/1903374))
+* **schema:** tdv:ref is typeof Schema ([dda14cf](https://github.com/vitarn/tdv/commit/dda14cf))
+
+
+
 <a name="0.1.3"></a>
 ## [0.1.3](https://github.com/vitarn/tdv/compare/v0.1.2...v0.1.3) (2018-03-29)
 
