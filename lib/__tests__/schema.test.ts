@@ -67,7 +67,29 @@ describe('Schema', () => {
             profile: Profile
         }
 
-        it('have 3 ways init a Schema', () => {
+        it('new plain instance', () => {
+            const profile = new Profile()
+            expect('name' in profile).toBe(false)
+            expect('age' in profile).toBe(false)
+        })
+
+        it('new default instance', () => {
+            const profile = new Profile({})
+            expect('name' in profile).toBe(true)
+            expect('age' in profile).toBe(true)
+            expect(profile.name).toBeUndefined()
+            expect(profile.age).toBe(1)
+        })
+
+        it('new empty instance', () => {
+            const profile = new Profile({}, { convert: false })
+            expect('name' in profile).toBe(true)
+            expect('age' in profile).toBe(true)
+            expect(profile.name).toBeUndefined()
+            expect(profile.age).toBeUndefined()
+        })
+
+        it('have 3 ways instance Schema with props', () => {
             const props = {
                 id: '1',
                 profile: {

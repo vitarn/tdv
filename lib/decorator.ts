@@ -7,14 +7,11 @@ const log = debug('decorator')
 
 /**
  * Inspire from core-decorators
+ * 
  * @see https://github.com/jayphelps/core-decorators/blob/master/src/private/utils.js
- * @param handleDescriptor 
- * @param entryArgs 
  */
 export function createDecorator(handleDescriptor: HandleDescriptor, entryArgs: any[]) {
     const [target] = entryArgs
-    // console.log('target instanceof Schema', target instanceof Schema, entryArgs)
-    // console.log('Schema.isPrototypeOf(target)', Schema.isPrototypeOf(target), entryArgs)
 
     if (target instanceof Schema) {
         // @propertyDecorator
@@ -77,9 +74,13 @@ function designTypeToJoiSchema(designType: Function) {
 
 /**
  * Required field decorator of schema
+ * 
  * @example
+ * 
+ *  class Example {
  *      @required name: string
  *      @required(Joi => Joi.string()) name: string
+ *  }
  */
 export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
     return createDecorator(fieldDescriptor({ required: true }), args)
@@ -87,11 +88,14 @@ export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
 
 /**
  * Optional field decorator of schema
+ * 
  * @example
+ * 
+ *  class Example {
  *      @optional name?: string
  *      @optional(Joi => Joi.string()) name?: string
+ *  }
  */
-
 export const optional: FlexibleDecorator<JoiBuilder> = (...args) => {
     return createDecorator(fieldDescriptor(), args)
 }

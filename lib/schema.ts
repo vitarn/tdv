@@ -6,11 +6,13 @@ const log = debug('schema')
 
 export class Schema {
     /**
-     * A copy version Joi
-     * Prevent modify global Joi options
+     * A copy version Joi. Prevent modify global Joi options.
      */
     static Joi = Joi.defaults(s => s)
 
+    /**
+     * Get metadata and all parent metadata then merge to one.
+     */
     static get metadata(): Metadata {
         const metadatas = []
         let proto = this.prototype
@@ -21,6 +23,9 @@ export class Schema {
         return Object.assign({}, ...metadatas)
     }
 
+    /**
+     * Compile Joi validator with metadata design type or user defined Joi schema.
+     */
     static get validator() {
         const metadata = this.metadata
         const schema = Object.keys(metadata).reduce((obj, key) => {
@@ -36,18 +41,49 @@ export class Schema {
         return this.Joi.object(schema)
     }
 
+    /**
+     * Build a new instance and `parse` props
+     * 
+     * Skip `parse` if props not present.
+     * 
+     * If provide props. It must follow correct type(`SchemaProperties<this>`). Otherwise typescript should complain to you. If you want to provide partial props. Consider use `new({})`
+     */
     static build<S extends Schema>(
         this: SchemaStatic<S>,
         props?: SchemaProperties<S>,
         options?: SchemaOptions
     ) {
-        return new this().parse(props, options) as S
+        let instance = new this() as S
+        if (props) instance = instance.parse(props, options)
+        return instance
     }
 
-    constructor(props?) {
-        if (props) this.parse(props)
+    /**
+     * Schema instance
+     * 
+     * There are 3 ways to create empty instance:
+     * * `new()` plain empty instance
+     * * `new({})` empty instance with joi default value
+     * * `new({}, {convert: false})` empty instance all undefined
+     * 
+     * Set initial props.
+     * * `new({...props})` should `parse` props recursively
+     * * `new({...props}, {convert: false})` `parse` props but skip joi casting and default.
+     */
+    constructor(props?, options?: SchemaOptions) {
+        if (props) this.parse(props, options)
     }
     
+    /**
+     * Parse props recursively into this instance
+     * 
+     * * If property type is Schema. Instance and call `parse` method on it.
+     * * If value is `null` or `undefined`. Set directly.
+     * * If convert option is true and Joi schema exists. Process value by Joi.validate then set value when valid.
+     * * If convert option is false or value is invalid to Joi schema. Set directly and leave there untouch.
+     * 
+     * @param options.convert casting and apply default by Joi. default true
+     */
     parse(
         props = {} as SchemaProperties<this>,
         options = {} as SchemaOptions
@@ -100,6 +136,12 @@ export class Schema {
         return this
     }
 
+    /**
+     * Validate by Joi
+     * 
+     * * Set allowUnknown option to true if not present.
+     * * Be careful the value returned is a new instance. This is design by Joi.
+     */
     validate(options = {} as ValidationOptions) {
         const { apply, raise, ...opts } = options
         if (!('allowUnknown' in opts)) opts.allowUnknown = true
@@ -116,7 +158,14 @@ export class Schema {
         return result
     }
 
-    toJSON(): { [key: string]: any } {
+    /**
+     * JSON stringify interface
+     * 
+     * * Only serializing the keys exists in metadata.
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
+     */
+    toJSON(key?: string): { [key: string]: any } {
         const metadata: Metadata = this.constructor['metadata']
 
         if (!metadata) return {}
@@ -199,6 +248,8 @@ export type SchemaStatic<T> = typeof Schema & {
  *  }
  * 
  * @see http://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html
+ * 
+ * This cannot use on constructor.
  */
 export type SchemaProperties<T> = T | Pick<T, ScalarPropertyNames<T>> & PickSchemaProperties<T, SchemaPropertyNames<T>>
 export type ScalarPropertyNames<T> = {[K in keyof T]: T[K] extends Schema | Function ? never : K }[keyof T]

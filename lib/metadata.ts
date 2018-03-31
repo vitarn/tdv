@@ -29,9 +29,11 @@ export function metadataFor(target: Object, propertyKey?: string | symbol) {
  * Reflect.metadata
  * Typescript emit `__metadata` into decorators array. Then try invoke this.
  * It's good chance return a new decorator.
+ * 
  * @example
  *      tsconfig.json
  *      { "emitDecoratorMetadata": true }
+ * 
  * @see http://nicholasjohnson.com/blog/how-angular2-di-works-with-typescript/
  */
 Object.assign(Reflect, {
