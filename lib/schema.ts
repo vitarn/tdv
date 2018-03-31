@@ -84,20 +84,22 @@ export class Schema {
         return this
     }
 
-    validate() {
+    validate(options: ValidationOptions & Joi.ValidationOptions = {}) {
+        const { apply, ...opts } = options
         const validator: Joi.Schema = this.constructor['validator']
-        const result = validator.validate(this)
+        const result = validator.validate(this, opts)
 
-        if (!result.error) this.parse(result.value)
+        if (apply && !result.error) this.parse(result.value)
 
         return result
     }
 
-    attempt() {
+    attempt(options: ValidationOptions = {}) {
+        const { apply } = options
         const validator: Joi.Schema = this.constructor['validator']
         const result = Joi.attempt(this, validator)
 
-        this.parse(result)
+        if (apply) this.parse(result)
 
         return result
     }
@@ -135,6 +137,10 @@ export interface MetadataProperty {
 
     'tdv:joi'?: Joi.Schema
     'tdv:ref'?: typeof Schema
+}
+
+export interface ValidationOptions {
+    apply?: boolean
 }
 
 /**

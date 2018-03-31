@@ -276,14 +276,15 @@ describe('Schema', () => {
             expect(user.validate().value.profile.age).toBe(1)
         })
 
-        it('write back after validate', () => {
+        it('mutable validate', () => {
             let user = new User({ id: '1', profile: new Profile() })
             expect(user.profile.age).toBe(1)
 
             user.profile.age = undefined
+            expect(user.validate().value.profile.age).toBe(1)
             expect(user.profile.age).toBeUndefined()
 
-            user.validate()
+            user.validate({ apply: true })
             expect(user.profile.age).toBe(1)
         })
     })
@@ -323,14 +324,15 @@ describe('Schema', () => {
             })
         })
 
-        it('write back after attempt', () => {
+        it('mutable attempt', () => {
             let user = new User({ id: '1', profile: new Profile() })
             expect(user.profile.age).toBe(1)
 
             user.profile.age = undefined
+            expect(user.attempt().profile.age).toBe(1)
             expect(user.profile.age).toBeUndefined()
 
-            user.attempt()
+            user.attempt({ apply: true })
             expect(user.profile.age).toBe(1)
         })
     })
