@@ -13,7 +13,7 @@ export class Schema {
     /**
      * Get metadata and all parent metadata then merge to one.
      */
-    static get metadata(): Metadata {
+    static get metadata(): SchemaMetadata {
         const metadatas = []
         let proto = this.prototype
         do {
@@ -89,7 +89,7 @@ export class Schema {
         options = {} as SchemaOptions
     ) {
         const { convert = true } = options
-        const metadata: Metadata = this.constructor['metadata']
+        const metadata: SchemaMetadata = this.constructor['metadata']
 
         for (const key in metadata) {
             const meta = metadata[key]
@@ -142,7 +142,7 @@ export class Schema {
      * * Set allowUnknown option to true if not present.
      * * Be careful the value returned is a new instance. This is design by Joi.
      */
-    validate(options = {} as ValidationOptions) {
+    validate(options = {} as SchemaValidationOptions) {
         const { apply, raise, ...opts } = options
         if (!('allowUnknown' in opts)) opts.allowUnknown = true
 
@@ -166,7 +166,7 @@ export class Schema {
      * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
      */
     toJSON(key?: string): { [key: string]: any } {
-        const metadata: Metadata = this.constructor['metadata']
+        const metadata: SchemaMetadata = this.constructor['metadata']
 
         if (!metadata) return {}
 
@@ -194,11 +194,11 @@ export interface SchemaOptions {
     convert?: boolean
 }
 
-export interface Metadata {
-    [propertyKey: string]: MetadataProperty
+export interface SchemaMetadata {
+    [propertyKey: string]: SchemaMetadataProperty
 }
 
-export interface MetadataProperty {
+export interface SchemaMetadataProperty {
     'design:type'?: Function | typeof Schema
     'design:paramtypes'?: Function[]
     'design:returntype'?: Function
@@ -207,7 +207,7 @@ export interface MetadataProperty {
     'tdv:ref'?: typeof Schema
 }
 
-export interface ValidationOptions extends Joi.ValidationOptions {
+export interface SchemaValidationOptions extends Joi.ValidationOptions {
     /**
      * Apply validate result value, `parse` it if valid.
      */
