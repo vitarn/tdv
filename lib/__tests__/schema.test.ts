@@ -88,7 +88,7 @@ describe('Schema', () => {
             expect(user.validate().error).toBeTruthy()
         })
 
-        it('return null error if valid', () => {
+        it('without error if valid', () => {
             let user = new User({ id: '123', profile: new Profile({ name: 'Joe' }) })
 
             expect(user.validate().error).toBeNull()
@@ -127,7 +127,7 @@ describe('Schema', () => {
         })
     })
 
-    describe('joi rewrite', () => {
+    describe('joi default', () => {
         class Foo extends Schema {
             @optional(j => j.number().default(() => 1, '1'))
             age: number
