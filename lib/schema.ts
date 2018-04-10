@@ -30,11 +30,19 @@ export class Schema {
         const metadata = this.metadata
         const schema = Object.keys(metadata).reduce((obj, key) => {
             const meta = metadata[key]
-            const val = meta['tdv:joi'] || meta['tdv:ref'] && meta['tdv:ref']['validator']
-            if (val) {
-                log('push field %s into validator', key)
-                obj[key] = val
+            const joi = meta['tdv:joi']
+            const ref = meta['tdv:ref']
+
+            if (joi) {
+                obj[key] = joi
+            } else if (ref) {
+                if (Array.isArray(ref)) {
+                    obj[key] = this.Joi.array().items(ref[0]['validator'])
+                } else if (ref['validator']) {
+                    obj[key] = ref['validator']
+                }
             }
+
             return obj
         }, {})
 
@@ -73,7 +81,7 @@ export class Schema {
     constructor(props?, options?: SchemaOptions) {
         if (props) this.parse(props, options)
     }
-    
+
     /**
      * Parse props recursively into this instance
      * 
@@ -102,21 +110,20 @@ export class Schema {
                 // skip sub model
                 if (!(key in props)) continue
 
-                if (value instanceof Ref || value === null || value === undefined) {
+                if (Array.isArray(Ref)) {
+                    if (Array.isArray(value)) {
+                        this[key] = value.map(v => v instanceof Ref[0] ? v : new Ref[0](v, options))
+                    } else {
+                        this[key] = []
+                    }
+                } else if (value instanceof Ref || value === null || value === undefined) {
                     // pass sub model instance or null directly
                     this[key] = value
-                    continue
-                } else if (!this[key]) {
+                } else if (typeof value === 'object') {
                     // init sub model if not exist
-                    this[key] = new Ref()
-                }
-
-                if (this[key].parse) {
-                    // sub model can parse value
-                    this[key].parse(value, options)
-                } else if (value && typeof value === 'object') {
-                    // non schema has tdv meta?
-                    Object.assign(this[key], value)
+                    if (!this[key]) {
+                        this[key] = new Ref(value, options)
+                    }
                 }
             } else if (joi && convert) {
                 const result = joi.validate(value)
@@ -126,6 +133,7 @@ export class Schema {
                     this[key] = value
                 } else {
                     // joi validate will cast trans and set default value
+                    // joi support convert string to number/boolean/binary/date/array/object
                     this[key] = result.value
                 }
             } else {
@@ -139,12 +147,11 @@ export class Schema {
     /**
      * Validate by Joi
      * 
-     * * Set allowUnknown option to true if not present.
      * * Be careful the value returned is a new instance. This is design by Joi.
      */
     validate(options = {} as SchemaValidationOptions) {
         const { apply, raise, ...opts } = options
-        if (!('allowUnknown' in opts)) opts.allowUnknown = true
+        // if (!('allowUnknown' in opts)) opts.allowUnknown = true
 
         const validator: Joi.Schema = this.constructor['validator']
         const result = validator.validate(this, opts)
@@ -166,26 +173,63 @@ export class Schema {
      * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
      */
     toJSON(key?: string): { [key: string]: any } {
-        const metadata: SchemaMetadata = this.constructor['metadata']
+        // const metadata: SchemaMetadata = this.constructor['metadata']
 
-        if (!metadata) return {}
+        // if (!metadata) return {}
 
-        const obj = {}
-        for (let key in metadata) {
-            const value = this[key]
+        const travel = target => {
+            const metadata: SchemaMetadata = target && target.constructor && target.constructor['metadata']
+            if (!metadata) return {}
 
-            if (value && typeof value.toJSON == 'function') {
-                obj[key] = value.toJSON()
-            } else if (typeof value !== 'undefined') {
-                obj[key] = value
+            const obj = {}
+
+            for (let key in metadata) {
+                const value = target[key]
+                if (typeof value === 'undefined') continue
+                if (value) {
+                    if (value instanceof Schema) {
+                        log('instanceof', value)
+                        obj[key] = travel(value)
+                    } else if (Array.isArray(value)) {
+                        log('isArray', value)
+                        obj[key] = value.map(v => v instanceof Schema ? travel(v) : v)
+                    } else {
+                        log('truly', value)
+                        obj[key] = value
+                    }
+                } else {
+                    log('faily', value)
+                    obj[key] = value
+                }
             }
+
+            return obj
         }
 
-        return obj
+        return travel(this)
+
+        // const obj = {}
+        // for (let key in metadata) {
+        //     const value = this[key]
+        //     if (typeof value === 'undefined') continue
+        //     if (value) {
+        //         if (typeof value.toJSON == 'function') {
+        //             obj[key] = value.toJSON(key)
+        //         } else if (Array.isArray(value)) {
+        //             obj[key] = value.map(v => v)
+        //         }
+        //     } else {
+        //         obj[key] = value
+        //     }
+        // }
+
+        // return obj
     }
 }
 
 /* TYPES */
+
+export type SchemaClass = typeof Schema
 
 export interface SchemaOptions {
     /**
@@ -199,12 +243,12 @@ export interface SchemaMetadata {
 }
 
 export interface SchemaMetadataProperty {
-    'design:type'?: Function | typeof Schema
+    'design:type'?: Function | SchemaClass
     'design:paramtypes'?: Function[]
     'design:returntype'?: Function
 
     'tdv:joi'?: Joi.Schema
-    'tdv:ref'?: typeof Schema
+    'tdv:ref'?: SchemaClass | SchemaClass[]
 }
 
 export interface SchemaValidationOptions extends Joi.ValidationOptions {
@@ -252,6 +296,8 @@ export type SchemaStatic<T> = typeof Schema & {
  * This cannot use on constructor.
  */
 export type SchemaProperties<T> = T | Pick<T, ScalarPropertyNames<T>> & PickSchemaProperties<T, SchemaPropertyNames<T>>
-export type ScalarPropertyNames<T> = {[K in keyof T]: T[K] extends Schema | Function ? never : K }[keyof T]
-export type SchemaPropertyNames<T> = {[K in keyof T]: T[K] extends Schema ? K : never }[keyof T]
+export type ScalarPropertyNames<T> = { [K in keyof T]: T[K] extends Function | Schema | Schema[] ? never : K }[keyof T]
+export type SchemaPropertyNames<T> = { [K in keyof T]: T[K] extends Schema | Schema[] ? K : never }[keyof T]
 export type PickSchemaProperties<T, K extends keyof T> = { [P in K]: T[P] | SchemaProperties<T[P]> }
+// export type SchemaArrayPropertyNames<T> = { [K in keyof T]: T[K] extends Schema[] ? K : never }[keyof T]
+// export type PickSchemaArrayProperties<T, K extends keyof T> = { [P in K]: T[P] | SchemaProperties<T[P]> }

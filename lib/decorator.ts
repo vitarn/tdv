@@ -34,7 +34,7 @@ const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, k
     let joi
 
     if (typeof fn === 'function') {
-        joi = fn(Joi)
+        joi = fn(Schema.Joi)
     } else {
         const designType = property['design:type'] as Function
 
@@ -56,19 +56,19 @@ function designTypeToJoiSchema(designType: Function) {
     log('parse design:type', designType)
     switch (designType) {
         case Number:
-            return Joi.number()
+            return Schema.Joi.number()
         case String:
-            return Joi.string()
+            return Schema.Joi.string()
         case Boolean:
-            return Joi.boolean()
+            return Schema.Joi.boolean()
         // only arrow function type, Function is Object
         case Function:
-            return Joi.func()
+            return Schema.Joi.func()
         // FIXME: this not works bcs Buffer is Object
         case Buffer:
-            return Joi.binary()
+            return Schema.Joi.binary()
         default:
-            return Joi.any()
+            return Schema.Joi.any()
     }
 }
 
@@ -98,6 +98,24 @@ export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
  */
 export const optional: FlexibleDecorator<JoiBuilder> = (...args) => {
     return createDecorator(fieldDescriptor(), args)
+}
+
+const referenceDescriptor: HandleDescriptor = (target, key, desc, [opts = {}]) => {
+    log('handleDescriptor', target, key, desc, opts)
+    if (opts.type) metadataFor(target, key)['tdv:ref'] = opts.type
+}
+
+/**
+ * Reference field decorator of schema
+ * 
+ * @example
+ * 
+ *  class Example {
+ *      @reference([Child]) children: Child[]
+ *  }
+ */
+export const reference: FlexibleDecorator<{ type: any }> = (...args) => {
+    return createDecorator(referenceDescriptor, args)
 }
 
 /* TYPES */
