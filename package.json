@@ -6,13 +6,11 @@
   "author": "colder",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "test": "jest",
+    "pretest": "tsc -p tsconfig.prod.json --noEmit",
+    "test": "jest --coverage --maxWorkers=4",
     "testing": "jest --watch",
-    "coverage": "jest --coverage --maxWorkers=4",
-    "typecheck": "tsc --noEmit",
     "release": "standard-version",
-    "prepack": "tsc --removeComments --inlineSourceMap false | echo shut up"
+    "prepack": "tsc -p tsconfig.prod.json"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
@@ -30,13 +28,14 @@
   "files": [
     "**/**.js",
     "**/*.d.ts",
-    "!__tests__"
+    "!coverage",
+    "!test"
   ],
   "jest": {
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(t)sx?$",
+    "testRegex": "/test/.*\\.(test)\\.(t)sx?$",
     "moduleFileExtensions": [
       "ts",
       "tsx",
@@ -44,6 +43,11 @@
       "jsx",
       "json",
       "node"
+    ]
+  },
+  "greenkeeper": {
+    "ignore": [
+      "joi"
     ]
   }
 }

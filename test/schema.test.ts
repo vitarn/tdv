@@ -1,6 +1,6 @@
 import Joi from 'joi'
-import { Schema } from '../schema'
-import { required, optional, createDecorator } from '../decorator'
+import { Schema } from '../lib/schema'
+import { required, optional, reference, createDecorator } from '../lib/decorator'
 
 describe('Schema', () => {
     describe('Joi', () => {
@@ -108,6 +108,11 @@ describe('Schema', () => {
     })
 
     describe('parse', () => {
+        class Pet extends Schema {
+            @optional
+            name?: string
+        }
+
         class Address extends Schema {
             @optional
             province?: string
@@ -132,8 +137,11 @@ describe('Schema', () => {
             @required
             id: string
 
-            @required
-            profile: Profile
+            @optional
+            profile?: Profile
+
+            @reference({ type: [Pet] })
+            pets?: Pet[]
         }
 
         it('parse object and init child', () => {
@@ -242,22 +250,50 @@ describe('Schema', () => {
 
             expect(user.profile.age).toBe('10y')
         })
+
+        it('correct handle Schema[] type', () => {
+            expect(new User().parse({
+                id: '1',
+                pets: [{ name: 'qq' }]
+            }).pets[0].name).toBe('qq')
+
+            expect(new User().parse({
+                id: '1',
+                pets: [{ name: 'qq' }]
+            }).pets[0]).toBeInstanceOf(Pet)
+
+            let pet = new Pet({ name: 'qq' })
+            expect(new User().parse({
+                id: '1',
+                pets: [pet]
+            }).pets[0]).toBe(pet)
+        })
     })
 
     describe('toJSON', () => {
-        class User extends Schema {
-            @required id: number
-            @required profile: Profile
+        class Pet extends Schema {
+            @optional name?: string
         }
 
         class Profile extends Schema {
             @required name: string
         }
 
+        class User extends Schema {
+            @required id: number
+            @required profile: Profile
+            @reference({ type: [Pet] })
+            pets?: Pet[]
+        }
+
         it('output json include refs', () => {
+            let profile = new Profile({ name: 'Joe' })
+            let pet = new Pet({ name: 'qq' });
+            (pet as any).bad = true
             let user = new User({
                 id: 1,
-                profile: new Profile({ name: 'Joe' })
+                profile,
+                pets: [pet],
             })
 
             expect(user.toJSON()).toEqual({
@@ -265,11 +301,18 @@ describe('Schema', () => {
                 profile: {
                     name: 'Joe',
                 },
+                pets: [{
+                    name: 'qq',
+                }],
             })
         })
     })
 
     describe('validate', () => {
+        class Pet extends Schema {
+            @optional name?: string
+        }
+
         class Profile extends Schema {
             @optional(j => j.string())
             name?: string
@@ -284,6 +327,9 @@ describe('Schema', () => {
 
             @optional
             profile?: Profile
+
+            @reference({ type: [Pet] })
+            pets?: Pet[]
         }
 
         it('contain error if invalid', () => {
@@ -329,6 +375,13 @@ describe('Schema', () => {
                     age: 1,
                 },
             })
+        })
+
+        it('validate Child[] type', () => {
+            expect(new User({
+                id: 1,
+                pets: [{ name: 'qq' }]
+            }).validate().error).toBeNull()
         })
     })
 

@@ -1,84 +1,8 @@
-import { Schema } from '../schema'
-import { required, optional, createDecorator } from '../decorator'
+import { Schema } from '../lib/schema'
+import { required, optional } from '../lib/decorator'
 
-describe('decorator', () => {
-    describe('createDecorator', () => {
-        it('create class decorator', () => {
-            @((...args) => createDecorator((target, [one]) => {
-                target.prototype['mark'] = true
-            }, args))
-            class Foo extends Schema { }
-
-            expect(Foo.prototype['mark']).toBe(true)
-        })
-
-        it('create class decorator with args', () => {
-            @((...args) => createDecorator((target, [one, two]) => {
-                target.prototype['one'] = one
-                target.prototype['two'] = two
-            }, args))(1, 2)
-            class Foo extends Schema { }
-
-            expect(Foo.prototype['one']).toBe(1)
-            expect(Foo.prototype['two']).toBe(2)
-        })
-
-        it('create prop decorator', () => {
-            class Foo extends Schema {
-                @((...args) => createDecorator((target, [one]) => {
-                    target['mark'] = true
-                }, args))
-                bar
-            }
-
-            expect(Foo.prototype['mark']).toBe(true)
-        })
-
-        it('create prop decorator with args', () => {
-            class Foo extends Schema {
-                @((...args) => createDecorator((target, key, desc, [one, two]) => {
-                    target['one'] = one
-                    target['two'] = two
-                }, args))(1, 2)
-                bar
-            }
-
-            expect(Foo.prototype['one']).toBe(1)
-            expect(Foo.prototype['two']).toBe(2)
-        })
-    })
-
-    describe('required', () => {
-        it('write joi object into metadata', () => {
-            class Foo extends Schema {
-                @required id: string
-            }
-
-            expect(Foo.metadata.id['tdv:joi'].describe()).toEqual({
-                type: 'string',
-                label: 'id',
-                invalids: [''],
-                flags: {
-                    presence: 'required',
-                },
-            })
-        })
-    })
-
-    describe('optional', () => {
-        it('write joi object into metadata', () => {
-            class Foo extends Schema {
-                @optional age: number
-            }
-
-            expect(Foo.metadata.age['tdv:joi'].describe()).toEqual({
-                type: 'number',
-                label: 'age',
-                invalids: [Infinity, -Infinity],
-                flags: {},
-            })
-        })
-
+describe('metadata', () => {
+    describe('joi', () => {
         it('understand scalar types', () => {
             class N extends Schema {
                 @optional f: number
@@ -158,6 +82,28 @@ describe('decorator', () => {
             })
         })
 
+        it('hold child schema type ref', () => {
+            class Child extends Schema { }
+            class Parent extends Schema {
+                @optional f: Child
+            }
+            expect(Parent.metadata.f['tdv:joi']).toBeUndefined()
+            expect(Parent.metadata.f['tdv:ref']).toBe(Child)
+        })
+
+        it('loss child schema type ref if order is wrong', () => {
+            class Parent extends Schema {
+                @optional f: Child
+            }
+            class Child extends Schema { }
+            expect(Parent.metadata.f['tdv:joi'].describe()).toEqual({
+                type: 'any',
+                label: 'f',
+                flags: {},
+            })
+            expect(Parent.metadata.f['tdv:ref']).toBeUndefined()
+        })
+
         it('no understand objects', () => {
             const desc = {
                 type: 'any',
@@ -194,6 +140,39 @@ describe('decorator', () => {
                 @optional f: Int8Array
             }
             expect(BA.metadata.f['tdv:joi'].describe()).toEqual(desc)
+        })
+
+        it('no understand complex types', () => {
+            const desc = {
+                type: 'any',
+                label: 'f',
+                flags: {},
+            }
+
+            class SA extends Schema {
+                @optional f: string[]
+            }
+            expect(SA.metadata.f['tdv:joi'].describe()).toEqual(desc)
+
+            class Child extends Schema { }
+            class Parent extends Schema {
+                @optional f: Child[]
+            }
+            expect(Parent.metadata.f['tdv:joi'].describe()).toEqual(desc)
+            expect(Parent.metadata.f['tdv:ref']).toBeUndefined()
+        })
+
+        it('no understand union types', () => {
+            const desc = {
+                type: 'any',
+                label: 'f',
+                flags: {},
+            }
+
+            class SoN extends Schema {
+                @optional f: string | number
+            }
+            expect(SoN.metadata.f['tdv:joi'].describe()).toEqual(desc)
         })
     })
 })
