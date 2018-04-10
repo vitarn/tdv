@@ -1,13 +1,12 @@
 # tdv
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/vitarn/tdv.svg)](https://greenkeeper.io/)
-
 Typescript (definition|decorator) validator base on Joi
 
 [![License][ico-license]][link-license]
 [![NPM][ico-npm]][link-npm]
 [![Build Status][ico-build]][link-build]
 [![Coverage Status][ico-codecov]][link-codecov]
+[![Greenkeeper badge][ico-greenkeeper]][link-greenkeeper]
 
 ## Example
 
@@ -94,8 +93,10 @@ console.log(user.toJSON())
 [ico-npm]: https://img.shields.io/npm/v/tdv.svg
 [ico-build]: https://travis-ci.org/vitarn/tdv.svg?branch=master
 [ico-codecov]: https://codecov.io/gh/vitarn/tdv/branch/master/graph/badge.svg
+[ico-greenkeeper]: https://badges.greenkeeper.io/vitarn/tdv.svg
 
 [link-license]: ./blob/master/LICENSE
 [link-npm]: https://www.npmjs.com/package/tdv
 [link-build]: https://travis-ci.org/vitarn/tdv
 [link-codecov]: https://codecov.io/gh/vitarn/tdv
+[link-greenkeeper]: https://greenkeeper.io/
