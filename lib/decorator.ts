@@ -7,14 +7,11 @@ const log = debug('decorator')
 
 /**
  * Inspire from core-decorators
+ * 
  * @see https://github.com/jayphelps/core-decorators/blob/master/src/private/utils.js
- * @param handleDescriptor 
- * @param entryArgs 
  */
 export function createDecorator(handleDescriptor: HandleDescriptor, entryArgs: any[]) {
     const [target] = entryArgs
-    // console.log('target instanceof Schema', target instanceof Schema, entryArgs)
-    // console.log('Schema.isPrototypeOf(target)', Schema.isPrototypeOf(target), entryArgs)
 
     if (target instanceof Schema) {
         // @propertyDecorator
@@ -37,7 +34,7 @@ const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, k
     let joi
 
     if (typeof fn === 'function') {
-        joi = fn(Joi)
+        joi = fn(Schema.Joi)
     } else {
         const designType = property['design:type'] as Function
 
@@ -52,31 +49,38 @@ const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, k
     if (opts.required && joi && typeof joi.required === 'function') {
         joi = joi.required()
     }
-    property['tdv:joi'] = joi
+    property['tdv:joi'] = joi.label(key)
 }
 
 function designTypeToJoiSchema(designType: Function) {
+    log('parse design:type', designType)
     switch (designType) {
         case Number:
-            return Joi.number()
+            return Schema.Joi.number()
         case String:
-            return Joi.string()
+            return Schema.Joi.string()
         case Boolean:
-            return Joi.boolean()
-        case Buffer:
-            return Joi.binary()
+            return Schema.Joi.boolean()
+        // only arrow function type, Function is Object
         case Function:
-            return Joi.func()
+            return Schema.Joi.func()
+        // FIXME: this not works bcs Buffer is Object
+        case Buffer:
+            return Schema.Joi.binary()
         default:
-            return Joi.any()
+            return Schema.Joi.any()
     }
 }
 
 /**
  * Required field decorator of schema
+ * 
  * @example
+ * 
+ *  class Example {
  *      @required name: string
  *      @required(Joi => Joi.string()) name: string
+ *  }
  */
 export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
     return createDecorator(fieldDescriptor({ required: true }), args)
@@ -84,13 +88,34 @@ export const required: FlexibleDecorator<JoiBuilder> = (...args) => {
 
 /**
  * Optional field decorator of schema
+ * 
  * @example
+ * 
+ *  class Example {
  *      @optional name?: string
  *      @optional(Joi => Joi.string()) name?: string
+ *  }
  */
-
 export const optional: FlexibleDecorator<JoiBuilder> = (...args) => {
     return createDecorator(fieldDescriptor(), args)
+}
+
+const referenceDescriptor: HandleDescriptor = (target, key, desc, [opts = {}]) => {
+    log('handleDescriptor', target, key, desc, opts)
+    if (opts.type) metadataFor(target, key)['tdv:ref'] = opts.type
+}
+
+/**
+ * Reference field decorator of schema
+ * 
+ * @example
+ * 
+ *  class Example {
+ *      @reference([Child]) children: Child[]
+ *  }
+ */
+export const reference: FlexibleDecorator<{ type: any }> = (...args) => {
+    return createDecorator(referenceDescriptor, args)
 }
 
 /* TYPES */
