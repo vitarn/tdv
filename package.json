@@ -1,6 +1,6 @@
 {
   "name": "tdv",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Typescript (definition|decorator) validator base on Joi",
   "repository": "https://github.com/vitarn/tdv",
   "author": "colder",
