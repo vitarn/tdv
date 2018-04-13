@@ -5,12 +5,19 @@
   "repository": "https://github.com/vitarn/tdv",
   "author": "colder",
   "license": "MIT",
+  "main": "lib",
+  "module": "es",
+  "types": "lib",
   "scripts": {
     "pretest": "tsc -p tsconfig.prod.json --noEmit",
     "test": "jest --coverage --maxWorkers=4",
     "testing": "jest --watch",
     "release": "standard-version",
-    "prepack": "tsc -p tsconfig.prod.json"
+    "prepack": "rimraf lib && tsc -p tsconfig.prod.json -d && rimraf es && tsc -p tsconfig.prod.json -m es2015 --outDir es || echo"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.12",
+    "tslib": "^1.9.0"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
@@ -18,6 +25,7 @@
     "@types/node": "^9.6.1",
     "jest": "^22.4.3",
     "joi": "12",
+    "rimraf": "^2.6.2",
     "standard-version": "^4.3.0",
     "ts-jest": "^22.4.2",
     "typescript": "^2.8.1"
@@ -26,10 +34,8 @@
     "joi": "*"
   },
   "files": [
-    "**/**.js",
-    "**/*.d.ts",
-    "!coverage",
-    "!test"
+    "lib",
+    "es"
   ],
   "jest": {
     "transform": {

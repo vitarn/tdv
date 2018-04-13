@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "es5",
-        "declaration": true,
+        "importHelpers": true,
         "esModuleInterop": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
@@ -9,5 +9,10 @@
         "lib": [
             "esnext",
         ],
+        "outDir": "lib"
     },
+    "include": [
+        "src",
+        "test"
+    ]
 }
