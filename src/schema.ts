@@ -1,6 +1,6 @@
 import debug from './debug'
+import 'reflect-metadata'
 import Joi from 'joi'
-import { metadataFor } from './metadata'
 
 const log = debug('schema')
 
@@ -11,25 +11,48 @@ export class Schema {
     static Joi = Joi.defaults(s => s)
 
     /**
-     * Get metadata and all parent metadata then merge to one.
+     * Get field metadata.
+     * 
+     * Includes properties decorate by required/optinal/reference.
      */
     static get metadata(): SchemaMetadata {
-        const metadatas = []
-        let proto = this.prototype
-        do {
-            metadatas.unshift(metadataFor(proto) || {})
-        } while (proto = Object.getPrototypeOf(proto))
+        if (Reflect.hasOwnMetadata('tdv:cache:metadata', this)) {
+            return Reflect.getOwnMetadata('tdv:cache:metadata', this)
+        }
 
-        return Object.assign({}, ...metadatas)
+        const metadata = (Reflect.getMetadataKeys(this.prototype) as string[])
+            // .reverse()
+            .filter(key => key.startsWith('tdv:key:'))
+            .map(key => key.substr(8))
+            .reduce((metadata, property) => {
+                metadata[property] = (Reflect.getMetadataKeys(this.prototype, property) as string[])
+                    .reduce((fieldmeta, annotation) => {
+                        fieldmeta[annotation] = Reflect.getMetadata(annotation, this.prototype, property)
+                        return fieldmeta
+                    }, {})
+                return metadata
+            }, {} as SchemaMetadata)
+
+        /*
+         * Memoize metadata
+         * Extended class share one static getter.
+         * We need a weakmap to hold different data for sub class. Reflect help us.
+         */
+        Reflect.defineMetadata('tdv:cache:metadata', metadata, this)
+
+        return metadata
     }
 
     /**
      * Compile Joi validator with metadata design type or user defined Joi schema.
      */
-    static get validator() {
-        const metadata = this.metadata
-        const schema = Object.keys(metadata).reduce((obj, key) => {
-            const meta = metadata[key]
+    static get validator(): Joi.ObjectSchema {
+        if (Reflect.hasOwnMetadata('tdv:cache:validator', this)) {
+            return Reflect.getOwnMetadata('tdv:cache:validator', this)
+        }
+
+        const validator = this.Joi.object(Object.keys(this.metadata).reduce((obj, key) => {
+            const meta = this.metadata[key]
             const joi = meta['tdv:joi']
             const ref = meta['tdv:ref']
 
@@ -44,9 +67,11 @@ export class Schema {
             }
 
             return obj
-        }, {})
+        }, {}))
 
-        return this.Joi.object(schema)
+        Reflect.defineMetadata('tdv:cache:validator', validator, this)
+
+        return validator
     }
 
     /**
@@ -99,30 +124,32 @@ export class Schema {
         const { convert = true } = options
         const metadata: SchemaMetadata = this.constructor['metadata']
 
-        for (const key in metadata) {
-            const meta = metadata[key]
-            const value = props[key]
+        for (const property in metadata) {
+            const meta = metadata[property]
+            const value = props[property]
 
             const Ref = meta['tdv:ref']
             const joi = meta['tdv:joi']
 
             if (Ref) {
                 // skip sub model
-                if (!(key in props)) continue
+                if (!(property in props)) continue
 
                 if (Array.isArray(Ref)) {
                     if (Array.isArray(value)) {
-                        this[key] = value.map(v => v instanceof Ref[0] ? v : new Ref[0](v, options))
+                        this[property] = value.map(v => v instanceof Ref[0] ? v : new Ref[0](v, options))
                     } else {
-                        this[key] = []
+                        this[property] = []
                     }
                 } else if (value instanceof Ref || value === null || value === undefined) {
                     // pass sub model instance or null directly
-                    this[key] = value
+                    this[property] = value
                 } else if (typeof value === 'object') {
                     // init sub model if not exist
-                    if (!this[key]) {
-                        this[key] = new Ref(value, options)
+                    if (!this[property]) {
+                        this[property] = new Ref(value, options)
+                    } else {
+                        // TODO: how to handle existed non ref value?
                     }
                 }
             } else if (joi && convert) {
@@ -130,14 +157,14 @@ export class Schema {
 
                 if (result.error) {
                     // joi invalid value
-                    this[key] = value
+                    this[property] = value
                 } else {
                     // joi validate will cast trans and set default value
                     // joi support convert string to number/boolean/binary/date/array/object
-                    this[key] = result.value
+                    this[property] = result.value
                 }
             } else {
-                this[key] = value
+                this[property] = value
             }
         }
 
@@ -151,7 +178,6 @@ export class Schema {
      */
     validate(options = {} as SchemaValidationOptions) {
         const { apply, raise, ...opts } = options
-        // if (!('allowUnknown' in opts)) opts.allowUnknown = true
 
         const validator: Joi.Schema = this.constructor['validator']
         const result = validator.validate(this, opts)
@@ -170,60 +196,50 @@ export class Schema {
      * 
      * * Only serializing the keys exists in metadata.
      * 
+     * @param key
+     * 
+     * * if this object is a property value, the property name.
+     * * if it is in an array, the index in the array, as a string.
+     * * an empty string if JSON.stringify() was directly called on this object
+     * 
      * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
      */
     toJSON(key?: string): { [key: string]: any } {
-        // const metadata: SchemaMetadata = this.constructor['metadata']
+        const metadata: SchemaMetadata = this.constructor['metadata']
+        if (!metadata) return {}
 
-        // if (!metadata) return {}
+        const json = {}
 
-        const travel = target => {
-            const metadata: SchemaMetadata = target && target.constructor && target.constructor['metadata']
-            if (!metadata) return {}
+        for (let key in metadata) {
+            const value = this[key]
 
-            const obj = {}
+            if (typeof value === 'undefined') continue
 
-            for (let key in metadata) {
-                const value = target[key]
-                if (typeof value === 'undefined') continue
-                if (value) {
-                    if (value instanceof Schema) {
-                        log('instanceof', value)
-                        obj[key] = travel(value)
-                    } else if (Array.isArray(value)) {
-                        log('isArray', value)
-                        obj[key] = value.map(v => v instanceof Schema ? travel(v) : v)
-                    } else {
-                        log('truly', value)
-                        obj[key] = value
-                    }
+            if (value) {
+                if (value instanceof Schema) {
+                    log('instanceof', value)
+
+                    json[key] = value.toJSON(key)
+                } else if (Array.isArray(value)) {
+                    log('isArray', value)
+
+                    json[key] = value.map((value, index) => value instanceof Schema
+                        ? value.toJSON(index.toString())
+                        : value
+                    )
                 } else {
-                    log('faily', value)
-                    obj[key] = value
-                }
-            }
+                    log('truly', value)
 
-            return obj
+                    json[key] = value
+                }
+            } else {
+                log('faily', value)
+
+                json[key] = value
+            }
         }
 
-        return travel(this)
-
-        // const obj = {}
-        // for (let key in metadata) {
-        //     const value = this[key]
-        //     if (typeof value === 'undefined') continue
-        //     if (value) {
-        //         if (typeof value.toJSON == 'function') {
-        //             obj[key] = value.toJSON(key)
-        //         } else if (Array.isArray(value)) {
-        //             obj[key] = value.map(v => v)
-        //         }
-        //     } else {
-        //         obj[key] = value
-        //     }
-        // }
-
-        // return obj
+        return json
     }
 }
 

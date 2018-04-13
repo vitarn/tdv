@@ -1,6 +1,6 @@
 import debug from './debug'
+import 'reflect-metadata'
 import Joi from 'joi'
-import { metadataFor } from './metadata'
 import { Schema } from './schema'
 
 const log = debug('decorator')
@@ -27,33 +27,27 @@ export function createDecorator(handleDescriptor: HandleDescriptor, entryArgs: a
     }
 }
 
-const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, key, desc, [fn] = []) => {
+const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, key, desc, [fn]) => {
     log('handleDescriptor', opts, target, key, desc, fn)
-    const property = metadataFor(target, key)
 
-    let joi
+    Reflect.defineMetadata(`tdv:key:${key}`, true, target)
 
-    if (typeof fn === 'function') {
-        joi = fn(Schema.Joi)
-    } else {
-        const designType = property['design:type'] as Function
+    const designType = Reflect.getOwnMetadata('design:type', target, key)
 
-        if (Schema.isPrototypeOf(designType)) {
-            property['tdv:ref'] = designType
-            return
-        } else {
-            joi = designTypeToJoiSchema(designType)
-        }
+    if (Schema.isPrototypeOf(designType)) {
+        Reflect.defineMetadata('tdv:ref', designType, target, key)
+        return
     }
 
-    if (opts.required && joi && typeof joi.required === 'function') {
-        joi = joi.required()
-    }
-    property['tdv:joi'] = joi.label(key)
+    const joi = (fn ? fn(Schema.Joi) as Joi.Schema : designTypeToJoiSchema(designType))
+        .label(key.toString())
+
+    Reflect.defineMetadata('tdv:joi', opts.required ? joi.required() : joi, target, key)
 }
 
 function designTypeToJoiSchema(designType: Function) {
     log('parse design:type', designType)
+
     switch (designType) {
         case Number:
             return Schema.Joi.number()
@@ -61,12 +55,16 @@ function designTypeToJoiSchema(designType: Function) {
             return Schema.Joi.string()
         case Boolean:
             return Schema.Joi.boolean()
-        // only arrow function type, Function is Object
+        case Array:
+            return Schema.Joi.array()
+        // arrow function, another functions is Object.
         case Function:
             return Schema.Joi.func()
-        // FIXME: this not works bcs Buffer is Object
-        case Buffer:
-            return Schema.Joi.binary()
+        // FIXME: this not works bcs Date and Buffer are Object.
+        // case Date:
+        // return Schema.Joi.date()
+        // case Buffer:
+        // return Schema.Joi.binary()
         default:
             return Schema.Joi.any()
     }
@@ -102,7 +100,12 @@ export const optional: FlexibleDecorator<JoiBuilder> = (...args) => {
 
 const referenceDescriptor: HandleDescriptor = (target, key, desc, [opts = {}]) => {
     log('handleDescriptor', target, key, desc, opts)
-    if (opts.type) metadataFor(target, key)['tdv:ref'] = opts.type
+
+    if (opts.type) {
+        Reflect.defineMetadata('tdv:ref', opts.type, target, key)
+        Reflect.defineMetadata(`tdv:key:${key}`, true, target)
+        // metadataFor(target, key)['tdv:ref'] = opts.type
+    }
 }
 
 /**

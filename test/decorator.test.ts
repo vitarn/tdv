@@ -1,5 +1,5 @@
-import { Schema } from '../lib/schema'
-import { required, optional, reference, createDecorator } from '../lib/decorator'
+import { Schema } from '../src/schema'
+import { required, optional, reference, createDecorator } from '../src/decorator'
 
 describe('decorator', () => {
     describe('createDecorator', () => {
@@ -49,12 +49,25 @@ describe('decorator', () => {
     })
 
     describe('required', () => {
-        it('write joi object into metadata', () => {
-            class Foo extends Schema {
-                @required id: string
-            }
+        class Foo extends Schema {
+            @required id: string
+        }
 
-            expect(Foo.metadata.id['tdv:joi'].describe()).toEqual({
+        class Bar extends Foo {}
+
+        it('write joi object into metadata', () => {
+            expect(Reflect.getOwnMetadata('tdv:joi', Foo.prototype, 'id').describe()).toEqual({
+                type: 'string',
+                label: 'id',
+                invalids: [''],
+                flags: {
+                    presence: 'required',
+                },
+            })
+        })
+
+        it('get joi metadata from sub class', () => {
+            expect(Reflect.getMetadata('tdv:joi', Bar.prototype, 'id').describe()).toEqual({
                 type: 'string',
                 label: 'id',
                 invalids: [''],
@@ -66,12 +79,12 @@ describe('decorator', () => {
     })
 
     describe('optional', () => {
-        it('write joi object into metadata', () => {
-            class Foo extends Schema {
-                @optional age: number
-            }
+        class Foo extends Schema {
+            @optional age: number
+        }
 
-            expect(Foo.metadata.age['tdv:joi'].describe()).toEqual({
+        it('write joi object into metadata', () => {
+            expect(Reflect.getMetadata('tdv:joi', Foo.prototype, 'age').describe()).toEqual({
                 type: 'number',
                 label: 'age',
                 invalids: [Infinity, -Infinity],
@@ -89,18 +102,18 @@ describe('decorator', () => {
                 bar: Bar
             }
 
-            expect(Foo.metadata.bar['tdv:joi']).toBeUndefined()
-            expect(Foo.metadata.bar['tdv:ref']).toBe(Bar)
+            expect(Reflect.getMetadata('tdv:joi', Foo.prototype, 'bar')).toBeUndefined()
+            expect(Reflect.getMetadata('tdv:ref', Foo.prototype, 'bar')).toBe(Bar)
         })
         
         it('write type array into metadata', () => {
             class Foo extends Schema {
                 @reference({ type: [Bar] })
-                bar: Bar[]
+                bars: Bar[]
             }
 
-            expect(Foo.metadata.bar['tdv:joi']).toBeUndefined()
-            expect(Foo.metadata.bar['tdv:ref'][0]).toBe(Bar)
+            expect(Reflect.getMetadata('tdv:joi', Foo.prototype, 'bar')).toBeUndefined()
+            expect(Reflect.getMetadata('tdv:ref', Foo.prototype, 'bars')).toEqual([Bar])
         })
     })
 })

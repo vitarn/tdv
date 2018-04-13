@@ -1,6 +1,6 @@
 import Joi from 'joi'
-import { Schema } from '../lib/schema'
-import { required, optional, reference, createDecorator } from '../lib/decorator'
+import { Schema } from '../src/schema'
+import { required, optional, reference, createDecorator } from '../src/decorator'
 
 describe('Schema', () => {
     describe('Joi', () => {
@@ -17,11 +17,7 @@ describe('Schema', () => {
             @optional(j => j.string())
             name?: string
         }
-
-        class SecondSchema extends FirstSchema {
-
-        }
-
+        class SecondSchema extends FirstSchema { }
         class ThirdSchema extends SecondSchema {
             @required(j => j.string().min(5).max(40))
             name: string
@@ -37,16 +33,16 @@ describe('Schema', () => {
             expect(Object.keys(Schema.metadata)).toEqual([])
         })
 
-        it('have metadatas in FirstSchema', () => {
+        it('have metadata in FirstSchema', () => {
             expect(Object.keys(FirstSchema.metadata)).toEqual(['id', 'name'])
         })
 
-        it('have metadatas in SecondSchema same as FirstSchema', () => {
+        it('have metadata in SecondSchema same as FirstSchema', () => {
             expect(Object.keys(SecondSchema.metadata)).toEqual(['id', 'name'])
         })
 
-        it('have metadatas in ThirdSchema', () => {
-            expect(Object.keys(ThirdSchema.metadata)).toEqual(['id', 'name', 'age', 'active'])
+        it('have metadata in ThirdSchema', () => {
+            expect(Object.keys(ThirdSchema.metadata)).toEqual(['name', 'age', 'active', 'id'])
         })
     })
 
@@ -99,7 +95,7 @@ describe('Schema', () => {
             const newUser = new User(props)
             const buildUser = User.build(props)
             const parseUser = new User().parse(props)
-
+            
             expect(newUser.profile).toBeInstanceOf(Profile)
 
             expect(buildUser).toEqual(newUser)
