@@ -30,7 +30,7 @@ export function createDecorator(handleDescriptor: HandleDescriptor, entryArgs: a
 const fieldDescriptor: ((opts?) => HandleDescriptor) = (opts = {}) => (target, key, desc, [fn]) => {
     log('handleDescriptor', opts, target, key, desc, fn)
 
-    Reflect.defineMetadata(`tdv:key:${key}`, true, target)
+    Reflect.defineMetadata(`tdv:key:${key.toString()}`, true, target)
 
     const designType = Reflect.getOwnMetadata('design:type', target, key)
 
@@ -103,7 +103,7 @@ const referenceDescriptor: HandleDescriptor = (target, key, desc, [opts = {}]) =
 
     if (opts.type) {
         Reflect.defineMetadata('tdv:ref', opts.type, target, key)
-        Reflect.defineMetadata(`tdv:key:${key}`, true, target)
+        Reflect.defineMetadata(`tdv:key:${key.toString()}`, true, target)
         // metadataFor(target, key)['tdv:ref'] = opts.type
     }
 }
