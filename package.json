@@ -17,18 +17,18 @@
   },
   "dependencies": {
     "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.0"
+    "tslib": "^1.9.2"
   },
   "devDependencies": {
-    "@types/jest": "^22.2.2",
-    "@types/joi": "^13.0.7",
-    "@types/node": "^10.0.3",
-    "jest": "^22.4.3",
+    "@types/jest": "^23.0.0",
+    "@types/joi": "^13.0.8",
+    "@types/node": "^10.3.1",
+    "jest": "^23.1.0",
     "joi": "12",
     "rimraf": "^2.6.2",
-    "standard-version": "^4.3.0",
-    "ts-jest": "^22.4.2",
-    "typescript": "^2.8.1"
+    "standard-version": "^4.4.0",
+    "ts-jest": "^22.4.6",
+    "typescript": "^2.9.1"
   },
   "peerDependencies": {
     "joi": "*"

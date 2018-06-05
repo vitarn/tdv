@@ -7,7 +7,7 @@
         "emitDecoratorMetadata": true,
         "inlineSourceMap": true,
         "lib": [
-            "esnext",
+            "esnext"
         ],
         "outDir": "lib"
     },

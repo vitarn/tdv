@@ -22,10 +22,11 @@ describe('metadata', () => {
             @optional N: Number
             @optional S: String
             @optional B: Boolean
+            @optional F: Function
+
             @optional D: Date
             @optional BF: Buffer
             @optional BA: Int8Array
-            @optional F: Function
             @optional bars: Bar[]
 
             @optional hu: number | string
@@ -50,19 +51,20 @@ describe('metadata', () => {
             ['boolean', 'b', { type: 'boolean', truthy: [true], falsy: [false], flags: { insensitive: true } }],
             ['boolean true', 'bv', { type: 'boolean', truthy: [true], falsy: [false], flags: { insensitive: true }}],
             ['arrow function', 'rf', { type: 'object', flags: { func: true } }],
+
+            ['Number', 'N', { type: 'number', invalids: [Infinity, -Infinity] }],
+            ['String', 'S', { type: 'string', invalids: [''] }],
+            ['Boolean', 'B', { type: 'boolean', truthy: [true], falsy: [false], flags: { insensitive: true } }],
+            ['Function', 'F', { type: 'object', flags: { func: true } }],
         ]) {
             const [type, ...args] = opts
             it(`understand ${type}`, macro.bind(this, ...args))
         }
 
         for (let opts of [
-            ['Number', 'N', anyDescribe],
-            ['String', 'S', anyDescribe],
-            ['Boolean', 'B', anyDescribe],
             ['Date', 'D', anyDescribe],
             ['Buffer', 'BF', anyDescribe],
             ['Int8Array', 'BA', anyDescribe],
-            ['Function', 'F', anyDescribe],
             ['hybrid union', 'hu', anyDescribe],
         ]) {
             const [type, ...args] = opts
